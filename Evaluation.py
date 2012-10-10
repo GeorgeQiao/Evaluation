@@ -5,7 +5,7 @@ import types
 class Evaluation:
     global con
 #    con = lite.connect( "C:/Embers/Sqlite/embers.db" )
-    con = lite.connect( "D:/Embers/Sqlite/embers.db" )
+    con = lite.connect( "C:/Embers/Sqlite/embers.db" )
     
     # get the total number of  raw data for events 0411
     def raw_data( self , eventCode ):
@@ -85,9 +85,9 @@ class Evaluation:
         cur = con.cursor()
         
         # get all waring lists for event type 0411 if prediction result is correct compared to the actual result
-        sqlString = " select ds.stock_index, ds.post_date from t_data_source ds where ds.eventCode=? except select pr.stock_index, pr.post_date from t_prediction_result pr " 
+        sqlString = " select ds.stock_index, ds.post_date from t_data_source ds where ds.eventCode=? except select pr.stock_index, pr.post_date from t_prediction_result pr where pr.eventCode=?" 
         
-        cur.execute( sqlString , ( [eventCode] ) )
+        cur.execute( sqlString , ( [eventCode,eventCode] ) )
         
         predictionRows = cur.fetchall()
         
@@ -104,9 +104,9 @@ class Evaluation:
         cur = con.cursor()
         
         # get all waring lists for event type 0411 if prediction result is correct compared to the actual result
-        sqlString = " select pr.stock_index, pr.post_date, pr.eventCode from t_prediction_result pr, t_data_source ds where ds.stock_index = pr.stock_index and ds.post_date =pr.post_date and ds.eventCode=? and ds.eventCode<>pr.eventCode" 
+        sqlString = " select pr.stock_index, pr.post_date, pr.eventCode from t_prediction_result pr where pr.eventCode=? except select ds.stock_index, ds.post_date, ds.eventCode from t_data_source ds where ds.eventCode=?" 
         
-        cur.execute( sqlString , ( [eventCode] ) )
+        cur.execute( sqlString , ( [eventCode ,eventCode] ) )
         
         predictionRows = cur.fetchall()
         
@@ -196,7 +196,7 @@ class Evaluation:
         for stock_index, wrongRecordCount in totalWrongRecordsCount.iteritems():
             for totalItem in totalRecords:
                 if stock_index in totalItem:
-                    wrongRecordsRate[stock_index] = float( wrongRecordCount ) / float( totalItem[stock_index] )
+                    wrongRecordsRate[stock_index] = '{:.2%}'.format(float( wrongRecordCount ) / float( totalItem[stock_index] ))
         return wrongRecordsRate
     
     # Get all correct prediction data 
@@ -240,7 +240,7 @@ class Evaluation:
         for rawRow in rawRows:
             for predictionRow in predictionRows:
                 if rawRow[1] == predictionRow[1]:
-                    eventCode0411[rawRow[1]] = float( predictionRow[0] ) / float( rawRow[0] )
+                    eventCode0411[rawRow[1]] = '{:.2%}'.format(float( predictionRow[0] ) / float( rawRow[0] ))
                     break
                 else:
                     continue
@@ -292,8 +292,12 @@ def Test():
     
     print "Get all unpredictive evaluation events:"
     print eva.get_unpredictive_records( '0411' )
+    print "Get all unpredictive evaluation events' count:"
+    print eva.get_unpredictive_records_count('0411' )
     print "Get wrong predictive events:"
     print eva.get_wrong_prediction_records( '0411' )
+    print "Get wrong predictive events' count:"
+    print eva.get_wrong_evaluation_count('0411' )
     print "Get the wrong ratio of this evaluation:"
     print eva.compute_wrong_data_ratio( '0411' )
     
